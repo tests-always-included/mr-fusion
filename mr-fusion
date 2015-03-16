@@ -175,10 +175,14 @@ initialize-repository() {
         git checkout --orphan "$MR_FUSION_BRANCH"
         git rm -rf .
 
+        # config
         for VAR in GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL; do
             echo "${VAR}=\"${!VAR}\"" >> config
         done
 
+        git add config
+
+        # branches.ini
         for BRANCH in "${GIT_BRANCHES[@]}"; do
             if [[ "$BRANCH" != "$MR_FUSION_BRANCH" ]]; then
                 echo "[$BRANCH]" >> branches.ini
@@ -187,7 +191,13 @@ initialize-repository() {
             fi
         done
 
-        git add config branches.ini
+        git add branches.ini
+
+        # plugins
+        mkdir plugins
+        touch plugins/.keep
+        git add plugins/.keep
+
         git commit -m 'Initial commit'
 
         if $DRY_RUN; then
