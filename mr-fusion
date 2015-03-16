@@ -112,6 +112,42 @@ in-array() {
     return 1
 }
 
+initialize-repository() {
+    local BRANCH VAR
+
+    if in-array "fusion" "${GIT_BRANCHES[@]}"; then
+        echo "ERROR: Repository already has a 'fusion' branch"
+        exit 1
+    fi
+
+    echo "Initializing repository for Mr. Fusion"
+    (
+        cd "$WORK_DIR"
+        git checkout --orphan fusion
+        git rm -rf .
+
+        for VAR in GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL; do
+            echo "${VAR}=\"${!VAR}\"" >> config
+        done
+
+        for BRANCH in "${GIT_BRANCHES[@]}"; do
+            echo "[$BRANCH]" >> branches.ini
+            echo "parent=" >> branches.ini
+            echo "" >> branches.ini
+        done
+
+        git add config branches.ini
+        git commit -m 'Initial commit'
+
+        if $DRY_RUN; then
+            echo "Not pushing upstream - this is a dry run"
+            exit 0
+        fi
+
+        git push origin "$MR_FUSION_BRANCH"
+    )
+}
+
 load-config() {
     switch-to-branch "$MR_FUSION_BRANCH"
 
@@ -327,6 +363,7 @@ verify-git-branches() {
 }
 
 BRANCHES=()
+DO_INITIALIZE=false
 DRY_RUN=false
 GIT_AUTHOR_NAME="Mr. Fusion"
 GIT_AUTHOR_EMAIL="mr.fusion@example.com"
@@ -343,7 +380,7 @@ MR_FUSION_URL="https://github.com/tests-always-included/mr-fusion"
 VALIDATION_FUNCTIONS=()
 WORK_DIR=
 
-while getopts ":c:hnr:" ARG; do
+while getopts ":c:hinr:" ARG; do
     case "$ARG" in
         c)
             . "$OPTARG"
@@ -353,6 +390,11 @@ while getopts ":c:hnr:" ARG; do
             help-message
 
             exit 0
+            ;;
+
+        i)
+            echo "Enabling initialization"
+            DO_INITIALIZE=true
             ;;
 
         n)
@@ -385,6 +427,13 @@ fi
 
 trap cleanup SIGINT SIGTERM EXIT
 clone-repository "$1"
+
+if $DO_INITIALIZE; then
+    load-git-branches
+    initialize-repository
+    exit
+fi
+
 load-config
 configure-git
 load-git-branches
