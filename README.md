@@ -55,19 +55,19 @@ This file has only environment variables and configuration directives for the ex
 This simple INI file lists the branches in the repository and their parent.  If there is an entry and it lists a parent, then Mr. Fusion will merge from the parent to the child.  The section names, such as `master` below, are in brackets and correspond to branch names.
 
     [master]
-    
+
     [develop]
     parent=master
-    
+
     [feature/juggernaut]
     parent=develop
-    
+
     [feature/sparkle]
     parent=develop
-    
+
     [feature/razzle-dazzle]
     parent=feature/sparkle
-    
+
 The cooler thing is that Mr. Fusion knows about dependencies.  For instance, it sees that `master` has no parent and thus no dependencies.  The merge from `master` to `develop` will happen before the merges from `develop` to `feature/juggernaut` and `feature/sparkle`.  After that, `feature/sparkle` will be merged into `feature/razzle-dazzle`.
 
 
@@ -77,3 +77,9 @@ Extending
 Extending?  Yeah, you can do it with more shell scripts.
 
 I have not written up this example yet (the project just started) but I certainly will.  You just need to add more functions and you can validate branches before the merge.  You can require settings in the INI file or mandate that branches are configured or else the entire merge stops.
+
+
+License
+-------
+
+This software is licensed under a MIT license with an additional non-advertising clause.  See [LICENSE.md](LICENSE.md) for the full text.
