@@ -1,0 +1,394 @@
+#!/usr/bin/env bash
+set -e
+
+build-merge-list() {
+    local BRANCH PARENT_VAR PREVIOUS_COUJNT STILL_UNHANDLED UNHANDLED
+
+    echo "Determining merge order"
+    PREVIOUS_COUNT=""
+    UNHANDLED=("${GIT_BRANCHES[@]}")
+    MERGE_LIST=()
+
+    while [[ "${#UNHANDLED[@]}" != "$PREVIOUS_COUNT" ]]; do
+        PREVIOUS_COUNT="${#UNHANDLED[@]}"
+        STILL_UNHANDLED=()
+
+        for BRANCH in "${UNHANDLED[@]}"; do
+            PARENT_VAR="BRANCHES__${BRANCH}__parent"
+
+            if [[ -z "${!PARENT_VAR}" ]] || in-array "${!PARENT_VAR}" "${MERGE_LIST[@]}"; then
+                MERGE_LIST=("${MERGE_LIST[@]}" "$BRANCH")
+            else
+                STILL_UNHANDLED=("${STILL_UNHANDLED[@]}" "$BRANCH")
+            fi
+        done
+
+        UNHANDLED=("${STILL_UNHANDLED[@]}")
+    done
+
+    if [[ "${#UNHANDLED}" -gt 0 ]]; then
+        echo "ERROR: Unable to find parents or handle circular dependency."
+        echo "ERROR: Unresolved branches: ${UNHANDLED[@]}"
+        exit 1
+    fi
+
+    echo "Merge order determined:"
+    show-list "${MERGE_LIST[@]}"
+}
+
+cleanup() {
+    echo "Cleaning up"
+
+    if [[ ! -z "$WORK_DIR" ]] && [[ -d "$WORK_DIR" ]]; then
+        rm -rf "$WORK_DIR"
+    fi
+}
+
+clone-repository() {
+    local CLONE_PATH
+
+    echo "Creating temporary directory"
+    CLONE_PATH=$1
+    WORK_DIR=$(mktemp -d || true)
+
+    if [[ -z "$WORK_DIR" ]] || [[ ! -d "$WORK_DIR" ]]; then
+        echo "ERROR: Unable to create temporary directory" >&2
+
+        exit 1
+    fi
+
+    echo "Cloning the repository"
+    git clone "$CLONE_PATH" "$WORK_DIR"
+}
+
+configure-git() {
+    echo "Configuring git"
+    (
+        cd "$WORK_DIR"
+        git config push.default simple
+    )
+}
+
+help-message() {
+    cat <<EOF
+Mr. Fusion
+
+Merge parent branches into child branches for a repository.
+See $MR_FUSION_URL for more information.
+
+Usage:
+    $MR_FUSION [OPTIONS] REPOSITORY_URL
+
+Options:
+    -c FILE    Load a config file with settings.
+    -h         This help message.
+    -n         Dry run - display everything but don't push merges to origin.
+    -r NAME    Use a given reporter, especially for CI environments.
+
+Available Reporters:
+EOF
+    echo -n "    "
+    reporter-list
+}
+
+helpful-termination() {
+    echo ""
+    echo "Use '$MR_FUSION -h' for help or check out the website."
+    echo "$MR_FUSION_URL"
+
+    exit 1
+}
+
+in-array() {
+    local CHECK NEEDLE
+
+    NEEDLE="$1"
+    shift
+
+    for CHECK in "$@"; do
+        [[ "$NEEDLE" == "$CHECK" ]] && return 0
+    done
+
+    return 1
+}
+
+load-config() {
+    switch-to-branch "$MR_FUSION_BRANCH"
+
+    if [[ -f "$WORK_DIR/config" ]]; then
+        echo "Loading config file from repository"
+        . "$WORK_DIR/config" "$WORK_DIR"
+    fi
+
+    if [[ -f "$WORK_DIR/branches.ini" ]]; then
+        echo "Parsing branches.ini"
+        parse-ini "BRANCHES" "$(cat "$WORK_DIR/branches.ini")"
+    fi
+
+    echo "Branches that are configured:"
+    show-list "${BRANCHES[@]}"
+}
+
+load-git-branches() {
+    local OLD_IFS
+
+    echo "Finding git branches"
+    OLD_IFS=$IFS
+    IFS="\n"
+    GIT_BRANCHES=()
+
+    while read LINE; do
+        LINE="$(trim "$LINE")"
+        LINE="${LINE//origin\/}"
+
+        if [[ ! -z "$LINE" ]] && [[ "$LINE" != "$MR_FUSION_BRANCH" ]]; then
+            GIT_BRANCHES=("${GIT_BRANCHES[@]}" "$LINE")
+        fi
+    done <<< "$(
+        cd "$WORK_DIR"
+        git branch -r | grep -v ' -> '
+    )"
+    IFS=$OLD_IFS
+    echo "Branches found:"
+    show-list "${GIT_BRANCHES[@]}"
+}
+
+merge-branches() {
+    local BRANCH PARENT_VAR
+
+    MERGES_FAIL=()
+    MERGES_GOOD=()
+
+    for BRANCH in "${MERGE_LIST[@]}"; do
+        PARENT_VAR="BRANCHES__${BRANCH}__parent"
+
+        if [[ -z "${!PARENT_VAR}" ]]; then
+            echo "Not merging $BRANCH - it has no parent"
+        else
+            if ! merge-two-branches "${!PARENT_VAR}" "$BRANCH"; then
+                echo "ERROR: Merge failed"
+                MERGES_FAIL=("${MERGES_FAIL[@]}" "$BRANCH")
+            else
+                echo "Merge successful"
+                MERGES_GOOD=("${MERGES_GOOD[@]}" "$BRANCH")
+            fi
+
+            if ! (
+                cd "$WORK_DIR"
+                git reset --hard "origin/$BRANCH"
+            ); then
+                echo "ERROR: Can not reset repository - can not continue"
+                exit 1
+            fi
+        fi
+    done
+}
+
+merge-two-branches() {
+    (
+        cd "$WORK_DIR"
+
+        switch-to-branch "$BRANCH" || exit 1
+
+        echo "Merging ${!PARENT_VAR} into $BRANCH"
+
+        if ! git merge "origin/${!PARENT_VAR}"; then
+            echo "ERROR: Unable to merge ${!PARENT_VAR} into $BRANCH"
+            exit 1
+        fi
+
+        if $DRY_RUN; then
+            echo "Not pushing upstream - this is a dry run"
+            exit 0
+        fi
+
+        git push
+    ) || return 1
+}
+
+parse-ini() {
+    local KEY OLD_IFS PREFIX SECTION VALUE
+
+    OLD_IFS=$IFS
+    IFS="\n"
+    SECTION=""
+    PREFIX="$1"
+
+    eval "${PREFIX}=()"
+
+    while read LINE; do
+        LINE=$(trim "$LINE")
+
+        if [[ "${LINE:0:1}" == '[' ]] && [[ "${LINE:${#LINE}-1}" == "]" ]]; then
+            LINE=${LINE:1:${#LINE}-2}
+            SECTION=$(trim "$LINE")
+            eval "${PREFIX}__${SECTION}=true"
+            eval "${PREFIX}=(\"\${${PREFIX}[@]}\" \"\$SECTION\")"
+        else
+            IFS="="
+            read KEY VALUE <<< "$LINE"
+            IFS="\n"
+            KEY=$(trim "$KEY")
+
+            if [[ ! -z "$KEY" ]]; then
+                VALUE=$(trim "$VALUE")
+                eval "${PREFIX}__${SECTION}__${KEY}=\$VALUE"
+            fi
+        fi
+    done <<< "$2"
+
+    IFS=$OLD_IFS
+}
+
+reporter-list() {
+    echo "not done"
+}
+
+reporter-load() {
+    echo "not done - expected to be able to load teamcity"
+}
+
+show-list() {
+    while [[ "$#" -gt 0 ]]; do
+        echo "  * $1"
+        shift
+    done
+}
+
+show-results() {
+    if [[ "${#MERGES_FAIL[@]}" -gt 0 ]]; then
+        echo "Failed merges detected"
+        show-list "${MERGES_FAIL[@]}"
+
+        exit 1
+    fi
+}
+
+switch-to-branch() {
+    echo "Switching to branch $1"
+    if ! (
+        cd "$WORK_DIR"
+        git checkout "$1"
+    ); then
+        echo "ERROR: Unable to check out branch $1" >&2
+
+        exit 1
+    fi
+}
+
+trim() {
+    local OLD STR
+
+    STR=$1
+    OLD=""
+
+    while [[ "$STR" != "$OLD" ]]; do
+        OLD=$STR
+        STR=${STR# }
+        STR=${STR#$'\n'}
+        STR=${STR#$'\r'}
+        STR=${STR#$'\t'}
+        STR=${STR% }
+        STR=${STR%$'\n'}
+        STR=${STR%$'\r'}
+        STR=${STR%$'\t'}
+    done
+
+    echo "$STR"
+}
+
+validate-branch() {
+    if [[ "${#VALIDATION_FUNCTIONS[@]}" -gt 1 ]]; then
+        for NAME in "${VALIDATION_FUNCTIONS[@]}"; do
+            $NAME "$@" || return 1
+        done
+    fi
+
+    return 0
+}
+
+verify-git-branches() {
+    local BRANCH BRANCH_VAR
+
+    echo "Verifying branches are configured"
+
+    # For each git branch, confirm that it is configured.
+    # When not configured, either make a "root" configuration or error.
+    for BRANCH in "${GIT_BRANCHES[@]}"; do
+        BRANCH_VAR="BRANCHES__$BRANCH"
+
+        if ! validate-branch "$BRANCH" "$BRANCH_VAR"; then
+            echo "ERROR: Branch did not pass validations: $BRANCH"
+            echo "ERROR: Aborting merge"
+
+            exit 1
+        fi
+    done
+}
+
+BRANCHES=()
+DRY_RUN=false
+GIT_AUTHOR_NAME="Mr. Fusion"
+GIT_AUTHOR_EMAIL="mr.fusion@example.com"
+GIT_BRANCHES=()
+GIT_COMMITTER_NAME="Mr. Fusion"
+GIT_COMMITTER_EMAIL="mr.fusion@example.com"
+MERGE_LIST=()
+MERGES_FAIL=()
+MERGES_GOOD=()
+MR_FUSION=${0##*/}
+MR_FUSION_BRANCH=fusion
+MR_FUSION_DIR=${0%%/*}
+MR_FUSION_URL="https://github.com/tests-always-included/mr-fusion"
+VALIDATION_FUNCTIONS=()
+WORK_DIR=
+
+while getopts ":c:hnr:" ARG; do
+    case "$ARG" in
+        c)
+            . "$OPTARG"
+            ;;
+
+        h)
+            help-message
+
+            exit 0
+            ;;
+
+        n)
+            echo "Enabling DRY_RUN"
+            DRY_RUN=true
+            ;;
+
+        r)
+            reporter-load "$OPTARG"
+            ;;
+
+        :)
+            echo "Option -$OPTARG requires a value."
+            helpful-termination
+            ;;
+
+        '?')
+            echo "Invalid option (-$OPTARG)."
+            helpful-termination
+            ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+if [[ -z "$1" ]]; then
+    echo "No repository specified."
+    helpful-termination
+fi
+
+trap cleanup SIGINT SIGTERM EXIT
+clone-repository "$1"
+load-config
+configure-git
+load-git-branches
+verify-git-branches
+build-merge-list
+merge-branches
+show-results
