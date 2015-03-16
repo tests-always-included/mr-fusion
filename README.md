@@ -30,7 +30,7 @@ Mr. Fusion is written in portable Bash and should operate anywhere Bash 3 or hig
 
 Just point Mr. Fusion at the git repository (can be local or hosted elsewhere) and the merges will begin.
 
-In order for Mr. Fusion to understand your branch hierarchy, it is essential that you create a `fusion` branch in your project.  Mr. Fusion can do this for you!
+In order for Mr. Fusion to understand your branch hierarchy, it is essential that you create a `mr-fusion` branch in your project.  Mr. Fusion can do this for you!
 
     mr-fusion -i http://github.com/your_name_here/your_repo_here.git
 
@@ -38,9 +38,13 @@ In order for Mr. Fusion to understand your branch hierarchy, it is essential tha
 Configuring
 -----------
 
-To see the configuration files for Mr. Fusion, you must first go to the `fusion` branch in your repository.
+To see the configuration files for Mr. Fusion, you must first go to the `mr-fusion` branch in your repository.
 
-    git checkout fusion
+    git checkout mr-fusion
+
+If you prefer to name your `mr-fusion` branch another name, you can do that with an environment variable (`MR_FUSION_BRANCH`).  You will need to use this environment variable every time you invoke Mr. Fusion.
+
+    MR_FUSION_BRANCH=another_branch mr-fusion ....
 
 From here you will see a `config` and `branches.ini`.
 
