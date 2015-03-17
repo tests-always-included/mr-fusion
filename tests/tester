@@ -38,7 +38,7 @@ playground-testcase() {
     (
         cd "$PLAYGROUND"
         testcase "$@"
-    )
+    ) || FAILURES=true
 }
 
 run-mr-fusion() {
@@ -61,6 +61,8 @@ testcase() {
     else
         echo "FAIL"
         FAILURES=true
+
+        return 1
     fi
 }
 
