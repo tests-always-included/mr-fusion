@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
+# Build a list of branches to merge
+#
+# Scans the parents defined in the branches.ini file and the branches
+# provided in git.  Adds branches to a list if the branch has no parent or
+# if the parent is already in the list.  Loops until all branches are added.
+#
+# Exits if there is a circular dependency.
+#
+# Sets the ordered branches to MERGE_LIST.
+#
+# Gets branch names from GIT_BRANCHES and the rules from the INI file
 build-merge-list() {
     local BRANCH PARENT_VAR PREVIOUS_COUJNT STILL_UNHANDLED UNHANDLED
 
@@ -38,6 +49,11 @@ build-merge-list() {
     show-list "${MERGE_LIST[@]}"
 }
 
+
+# Removes the temporary directory where the repository was stored during the
+# execution of Mr. Fusion.
+#
+# This is automatically ran through a trap.
 cleanup() {
     echo "Cleaning up"
 
@@ -46,6 +62,11 @@ cleanup() {
     fi
 }
 
+
+# Creates a temporary directory and clones the desired repository into the
+# temporary directory.
+#
+# Runs the hook clone-repository.
 clone-repository() {
     local CLONE_PATH
 
@@ -64,6 +85,10 @@ clone-repository() {
     hook-run-or-exit clone-repository
 }
 
+
+# Sets git configuration settings to ensure good merges.
+#
+# Runs the hook git-config.
 configure-git() {
     echo "Configuring git"
     (
@@ -73,6 +98,8 @@ configure-git() {
     hook-run-or-exit git-config
 }
 
+
+# Displays a useful help message.
 help-message() {
     cat <<EOF
 Mr. Fusion
@@ -90,6 +117,11 @@ Options:
 EOF
 }
 
+
+# Hex encodes a string and writes it to stdout.
+#
+# Parameters:
+#     $1: The string to encode.
 encode-string() {
     local C OUT
 
@@ -107,6 +139,7 @@ encode-string() {
 }
 
 
+# Show a nice message after an error and exit the program.
 helpful-termination() {
     echo ""
     echo "Use '$MR_FUSION -h' for help or check out the website."
@@ -115,6 +148,14 @@ helpful-termination() {
     exit 1
 }
 
+
+# Add a command to be called for a given hook.
+#
+# Exits with an error if there are not enough arguments passed.
+#
+# Parameters:
+#     $1: Hook name.
+#     $2-$*: The command and optional arguments.
 hook-add() {
     local COMMAND VAR
 
@@ -124,18 +165,23 @@ hook-add() {
         exit 1
     fi
 
-    VAR="HOOK_$1"
-    VAR=${VAR//-/_}
+    VAR="HOOK_$(encode-string "$1")"
     shift
     printf -v COMMAND "%q " "$@"
     eval "${VAR}=(\"\${${VAR}[@]}\" \"\${COMMAND:1}\")"
 }
 
+
+# Run all of the commands for a given hook.
+#
+# Returns an error if any hook returned an error.
+#
+# Parameters:
+#     $1: Hook name to run.
 hook-run() {
     local COMMAND LIST VAR
 
-    VAR="HOOK_$1"
-    VAR=${VAR//-/_}
+    VAR="HOOK_$(encode-string "$1")"
     eval "LIST=(\"\${${VAR}[@]}\")"
 
     if [[ ${#LIST} -eq 0 ]]; then
@@ -149,6 +195,12 @@ hook-run() {
     return 0
 }
 
+
+# Run a hook from within the repository.  If anything returned an error then
+# exit the program.  Otherwise, restore the current directory.
+#
+# Parameters:
+#     $1: Hook name to run.
 hook-run-or-exit() {
     local OLD_PWD
 
@@ -164,6 +216,24 @@ hook-run-or-exit() {
     cd "$OLD_PWD"
 }
 
+
+# Check if a value is in a list of values.  Useful for determining if a value
+# is in an array.
+#
+# Example:
+#
+#    FARM_ANIMALS=(horse cow pig sheep)
+#    ANIMAL="elephant"
+#
+#    if ! in-array "$ANIMAL" "${FARM_ANIMALS[@]}"; then
+#        echo "$ANIMAL is not a farm animal"
+#    fi
+#
+# Parameters:
+#     $1: The value to seek (the needle).
+#     $2-$*: The array of values to search within (the haystack).
+#
+# Returns true (0) if the value is in the array, false (1) if not.
 in-array() {
     local CHECK NEEDLE
 
@@ -178,6 +248,14 @@ in-array() {
 }
 
 
+# Construct an environment variable to look up information from the
+# parsed branches.ini file.
+#
+# The variable name is written to stdout.
+#
+# Parameters:
+#     $1: Section name.
+#     $2: Key (optional).
 ini-var() {
     local VAR
 
@@ -191,6 +269,8 @@ ini-var() {
 }
 
 
+# Helpful function to take a repository and initialize it with a mr-fusion
+# branch and a skeleton configuration.
 initialize-repository() {
     local BRANCH VAR
 
@@ -239,6 +319,9 @@ initialize-repository() {
     )
 }
 
+
+# Helpful function to download and install a plugin from the Mr. Fusion
+# repository into your repository.
 install-plugin() {
     if ! in-array "$MR_FUSION_BRANCH" "${GIT_BRANCHES[@]}"; then
         echo "ERROR: Repository is not configured with a '$MR_FUSION_BRANCH' branch"
@@ -268,6 +351,14 @@ install-plugin() {
     )
 }
 
+
+# Load the config files and plugins in your repository.
+#
+# The config is sourced, as are plugins.
+#
+# The branches.ini file is parsed and set into the environment.
+#
+# Runs the hook load-config.
 load-config() {
     local OLD_PWD PLUGIN
 
@@ -299,6 +390,13 @@ load-config() {
     hook-run-or-exit "load-config"
 }
 
+
+# Load all git branches from your repository.  This includes the magic
+# "mr-fusion" branch.
+#
+# Branches are set to the GIT_BRANCHES array.
+#
+# Runs the hook git-branches.
 load-git-branches() {
     local OLD_IFS
 
@@ -324,6 +422,13 @@ load-git-branches() {
     hook-run-or-exit "git-branches"
 }
 
+
+# Perform the merge of all branches
+#
+# Reads the array of branch names from MERGE_LIST.  Processes each one.
+# Populates MERGES_FAIL and MERGES_GOOD arrays.
+#
+# Runs the hooks merge-start, merge-fail, merge-good, merge-finiah.
 merge-branches() {
     local BRANCH PARENT_VAR
 
@@ -361,17 +466,27 @@ merge-branches() {
     hook-run-or-exit merge-finish
 }
 
+
+# Merges one parent into one child.
+#
+# Parameters:
+#     $1: Parent branch.
+#     $2: Child branch.
+#
+# Returns true (0) on success, false (1) otherwise.
+#
+# Runs the hooks merge-before, merge-validate.
 merge-two-branches() {
     (
         cd "$WORK_DIR"
 
-        switch-to-branch "$BRANCH" || exit 1
+        switch-to-branch "$2" || exit 1
         hook-run-or-exit merge-before
 
-        echo "Merging ${!PARENT_VAR} into $BRANCH"
+        echo "Merging $1 into $2"
 
-        if ! git merge "origin/${!PARENT_VAR}"; then
-            echo "ERROR: Unable to merge ${!PARENT_VAR} into $BRANCH"
+        if ! git merge "origin/$1"; then
+            echo "ERROR: Unable to merge $1 into $2"
             exit 1
         fi
 
@@ -386,6 +501,19 @@ merge-two-branches() {
     ) || return 1
 }
 
+
+# Parses any INI file into the environment.  Variables are set like this:
+#
+#     PREFIX=(array of section names)
+#     PREFIX__SECTION=true
+#     PREFIX__SECTION__KEY=value
+#
+# The SECTION and KEY portions are hex encoded to ensure they are valid
+# variable names.
+#
+# Parameters:
+#     $1: Prefix for variables.
+#     $2: INI file contents
 parse-ini() {
     local KEY OLD_IFS PREFIX SECTION VALUE
 
@@ -424,6 +552,12 @@ parse-ini() {
     IFS=$OLD_IFS
 }
 
+
+# Writes elements of an array out to stdout.  Each element is on its own line
+# as a bulleted list.
+#
+# Parameters:
+#     $*: All array elements
 show-list() {
     while [[ "$#" -gt 0 ]]; do
         echo "  * $1"
@@ -431,6 +565,10 @@ show-list() {
     done
 }
 
+
+# Show a summary of what happened.
+#
+# In case of failed merges, this is where the program terminates.
 show-results() {
     if [[ "${#MERGES_FAIL[@]}" -gt 0 ]]; then
         echo "Failed merges detected"
@@ -440,6 +578,15 @@ show-results() {
     fi
 }
 
+
+# Switches to a branch
+#
+# Parameters:
+#     $1: Branch name
+#
+# Returns true (0) on success, false (1) otherwise.
+#
+# Runs the hook switch-branch.
 switch-to-branch() {
     echo "Switching to branch $1"
     if ! (
@@ -453,6 +600,11 @@ switch-to-branch() {
     hook-run-or-exit switch-branch
 }
 
+
+# Trims a string.  Writes the result to stdout.
+#
+# Parameters:
+#     $1: The string to trim
 trim() {
     local OLD STR
 
