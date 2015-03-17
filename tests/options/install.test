@@ -7,6 +7,17 @@ install-works() {
 
 playground-testcase install-works "Can install into a repository"
 
+install-works-dry-run() {
+    run-mr-fusion -i -n
+    git branch | grep mr-fusion && (
+        echo "Branch should not have been created"
+        exit 1
+    )
+    true
+}
+
+playground-testcase install-works-dry-run "Can install into a repository and dry run mode will not push changes"
+
 install-fails-when-already-exists() {
     git checkout -b mr-fusion 2>&1
     ! run-mr-fusion -i
