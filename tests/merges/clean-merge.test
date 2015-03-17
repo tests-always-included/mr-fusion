@@ -1,0 +1,66 @@
+#!../tester
+
+clean-merge() {
+    local BRANCH
+
+    run-mr-fusion -i
+    git checkout mr-fusion 2>&1
+    cat > branches.ini <<EOF
+[develop]
+parent=master
+
+[feature1]
+parent=develop
+
+[feature2]
+parent=develop
+EOF
+    git commit -m 'Update branches' branches.ini
+
+    for BRANCH in develop feature1 feature2 master; do
+        git checkout master 2>&1
+
+        if [[ "$BRANCH" != "master" ]]; then
+            git checkout -b "$BRANCH" 2>&1
+        fi
+
+        echo "$BRANCH" > "file-$BRANCH"
+        git add "file-$BRANCH"
+        git commit -m 'Initial commit: $BRANCH'
+    done
+
+    run-mr-fusion
+
+    test-branch-files master file-master || return 1
+    test-branch-files develop file-master file-develop || return 1
+    test-branch-files feature1 file-master file-develop file-feature1 || return 1
+    test-branch-files feature2 file-master file-develop file-feature2 || return 1
+}
+
+test-branch-files() {
+    local ACTUAL BRANCH EXPECTED FILE
+
+    BRANCH="$1"
+    shift
+    EXPECTED=("$@")
+    ACTUAL=()
+    git checkout "$BRANCH" 2>&1
+
+    for FILE in file-*; do
+        ACTUAL=("${ACTUAL[@]}" "$FILE")
+
+        if ! in-array "$FILE" "${EXPECTED[@]}"; then
+            echo "$FILE should not exist in $BRANCH" >&2
+            return 1
+        fi
+    done
+
+    for FILE in "${EXPECTED[@]}"; do
+        if ! in-array "$FILE" "${ACTUAL[@]}"; then
+            echo "Expected $FILE to be in $BRANCH" >&2
+            return 1
+        fi
+    done
+}
+
+playground-testcase clean-merge "Performs a clean merge across branches"
