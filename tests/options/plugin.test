@@ -1,0 +1,60 @@
+#!../tester
+
+setup() {
+    if ! run-mr-fusion -i; then
+        echo "Could not initialize the repository" >&2
+        return 1
+    fi
+
+    if ! ( git branch | grep mr-fusion ); then
+        echo "Configuration branch was not created" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+good-name() {
+    setup
+    run-mr-fusion -p require-author
+    git show mr-fusion:plugins/require-author > /dev/null
+}
+
+playground-testcase good-name "Can install a plugin by name"
+
+good-name-dry-run() {
+    setup
+    run-mr-fusion -p require-author -n
+    ! git show mr-fusion:plugins/require-author 2>&1
+}
+
+playground-testcase good-name-dry-run "Can install a plugin by name but will not push in dry run mode"
+
+bad-name() {
+    setup
+
+    if run-mr-fusion -p bad-name-blah-blah-blah; then
+        echo "Should have failed" >&2
+        return 1
+    fi
+
+    if git show mr-fusion:plugins/bad-name-blah-blah-blah 2>&1; then
+        echo "Should have not created a file" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+playground-testcase bad-name "Can not install a plugin with a bad name"
+
+not-initialized() {
+    if run-mr-fusion -p require-author; then
+        echo "Should not have executed because no config branch" >&2
+        return 1
+    fi
+
+    return 0
+}
+
+playground-testcase not-initialized "Should not operate on unconfigured repositories"
