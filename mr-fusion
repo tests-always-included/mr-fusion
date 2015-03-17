@@ -697,6 +697,7 @@ fi
 
 trap cleanup SIGINT SIGTERM EXIT
 clone-repository "$1"
+configure-git
 
 if $DO_INITIALIZE; then
     load-git-branches
