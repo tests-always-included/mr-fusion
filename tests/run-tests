@@ -10,8 +10,11 @@ FINAL_RESULT=0
 find . -type f -name \*.test | while read TEST; do
     if (
         echo "Test suite:  $TEST"
+        echo ""
 
         ./tester $TEST
+
+        echo ""
     ); then
         PASS=$(($PASS + 1))
     else
