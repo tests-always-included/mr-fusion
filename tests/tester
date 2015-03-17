@@ -50,7 +50,7 @@ run-mr-fusion() {
         ARGS=("${ARGS[@]}" "$PLAYGROUND")
     fi
 
-    "$PROJECT_ROOT/mr-fusion" "${ARGS[@]}" > /dev/null 2>&1
+    "$PROJECT_ROOT/mr-fusion" "${ARGS[@]}" 2>&1
 }
 
 testcase() {
