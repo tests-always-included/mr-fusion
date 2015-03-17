@@ -3,6 +3,8 @@ Mr. Fusion
 
 Git branch management and upkeeping made easier.  You can't make it completely automated, but you can remove almost all of the mundane work.
 
+[![Build Status][travis-image]][Travis CI]
+
 This software solves the problem that crops up when there are multiple branches being developed simultaneously in git repositories.  Let's say that you have three developers (Abel, Barney and Corey) working on three feature branches (`a`, `b`, and `c` respectively).  They all start from the project's `master` branch at the same time.
 
 The problem arises from the mentality that "the first one to `master` wins!"
@@ -89,3 +91,7 @@ License
 -------
 
 This software is licensed under a MIT license with an additional non-advertising clause.  See [LICENSE.md](LICENSE.md) for the full text.
+
+
+[Travis CI]: http://travis-ci.org/tests-always-included/mr-fusion
+[Travis-Image]: https://secure.travis-ci.rg/tests-always-included/mr-fusion.png
