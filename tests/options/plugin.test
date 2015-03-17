@@ -1,7 +1,7 @@
 #!../tester
 
 setup() {
-    if ! run-mr-fusion -i >&2; then
+    if ! run-mr-fusion -i; then
         echo "Could not initialize the repository" >&2
         return 1
     fi
