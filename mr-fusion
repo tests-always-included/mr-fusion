@@ -491,7 +491,7 @@ merge-two-branches() {
 
         echo "Merging $1 into $2"
 
-        if ! git merge "origin/$1"; then
+        if ! git merge "origin/$1" -m "$GIT_MERGE_MESSAGE"; then
             echo "ERROR: Unable to merge $1 into $2"
             exit 1
         fi
@@ -640,6 +640,7 @@ GIT_AUTHOR_EMAIL="mr.fusion@example.com"
 GIT_BRANCHES=()
 GIT_COMMITTER_NAME="Mr. Fusion"
 GIT_COMMITTER_EMAIL="mr.fusion@example.com"
+GIT_MERGE_MESSAGE="Automatic merge by Mr. Fusion"
 INI_BRANCHES=()
 MERGE_LIST=()
 MERGES_FAIL=()

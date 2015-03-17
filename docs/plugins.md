@@ -55,6 +55,7 @@ Plugins will execute their code in hooks.  All hooks will run while within the r
 * `DRY_RUN`: Read only variable set to `true` or `false`.  When in dry run mode, changes are not pushed back to origin.
 * `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL`, etc: git-specific environment variables.
 * `GIT_BRANCHES`: List of branches that were found in git.
+* `GIT_MERGE_MESSAGE`: Message to add to the commit that merges the branches.
 * `INI_BRANCHES`: Read only array of section names (which correspond to branch names) from the `branches.ini` file.
 * `INI_BRANCHES__*`: See "Parsing branches.ini" for information.
 * `MERGE_LIST`: List of branches to merge in the order they should be merged.
