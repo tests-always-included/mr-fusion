@@ -111,9 +111,12 @@ Usage:
     $MR_FUSION [OPTIONS] REPOSITORY_URL
 
 Options:
-    -c FILE    Load a config file with settings.
     -h         This help message.
+    -i         Install a configuration branch and skeleton files into your
+               repository.
     -n         Dry run - display everything but don't push merges to origin.
+    -p FILE    Download and install a plugin from the Mr. Fusion repository
+               into yours.
 EOF
 }
 
@@ -644,12 +647,8 @@ MR_FUSION_DIR=${0%%/*}
 MR_FUSION_URL="https://github.com/tests-always-included/mr-fusion"
 WORK_DIR=
 
-while getopts ":c:hin:p:" ARG; do
+while getopts ":hin:p:" ARG; do
     case "$ARG" in
-        c)
-            . "$OPTARG"
-            ;;
-
         h)
             help-message
 
