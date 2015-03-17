@@ -1,0 +1,75 @@
+#!../tester
+
+conflict-merge() {
+    local BRANCH
+
+    run-mr-fusion -i
+    git checkout mr-fusion 2>&1
+    cat > branches.ini <<EOF
+[develop]
+parent=master
+EOF
+    git commit -m 'Update branches' branches.ini
+
+    git checkout master 2>&1
+    cat > source.txt <<EOF
+Line 1
+Line 2
+Line 3
+EOF
+    git add source.txt
+    git commit -m 'Initial commit'
+
+    git checkout -b develop 2>&1
+    sed -i "s/2/2develop/" source.txt
+    git commit -m "develop changes" source.txt
+
+    git checkout master 2>&1
+    sed -i "s/2/2master/" source.txt
+    git commit -m "master changes" source.txt
+
+    if run-mr-fusion; then
+        echo "Should have reported failure"
+        return 1
+    fi
+
+    if git show master:source.txt | grep -q develop; then
+        echo "Master version should not have 'develop'"
+        return 1
+    fi
+
+    if git show develop:source.txt | grep -q master; then
+        echo "Master version should not have 'master'"
+        return 1
+    fi
+
+    return 0
+}
+
+test-branch-files() {
+    local ACTUAL BRANCH EXPECTED FILE
+
+    BRANCH="$1"
+    shift
+    EXPECTED=("$@")
+    ACTUAL=()
+    git checkout "$BRANCH" 2>&1
+
+    for FILE in file-*; do
+        ACTUAL=("${ACTUAL[@]}" "$FILE")
+
+        if ! in-array "$FILE" "${EXPECTED[@]}"; then
+            echo "$FILE should not exist in $BRANCH" >&2
+            return 1
+        fi
+    done
+
+    for FILE in "${EXPECTED[@]}"; do
+        if ! in-array "$FILE" "${ACTUAL[@]}"; then
+            echo "Expected $FILE to be in $BRANCH" >&2
+            return 1
+        fi
+    done
+}
+
+playground-testcase conflict-merge "Should report failure if there is a conflict"
