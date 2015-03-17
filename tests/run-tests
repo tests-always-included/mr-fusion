@@ -23,4 +23,7 @@ find . -type f -name \*.test | while read TEST; do
     fi
 done
 
+echo ""
+echo "Pass:  $PASS"
+echo "Fail:  $FAIL"
 exit $FINAL_RESULT
