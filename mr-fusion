@@ -80,7 +80,7 @@ clone-repository() {
         exit 1
     fi
 
-    echo "Cloning the repository"
+    echo "Cloning the repository from $CLONE_PATH"
     git clone "$CLONE_PATH" "$WORK_DIR"
     hook-run-or-exit clone-repository
 }
