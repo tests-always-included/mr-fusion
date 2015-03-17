@@ -340,7 +340,7 @@ install-plugin() {
 
         cd plugins
         git checkout "$MR_FUSION_BRANCH"
-        curl -s "https://raw.githubusercontent.com/tests-always-included/mr-fusion/master/plugins/$1" > $1
+        curl -s -f "https://raw.githubusercontent.com/tests-always-included/mr-fusion/master/plugins/$1" > $1 || exit 1
         git add "$1"
         git commit -m "Installing plugin $1"
 
@@ -351,7 +351,10 @@ install-plugin() {
 
         git push origin "$MR_FUSION_BRANCH"
         echo "Plugin downloaded and installed: $1"
-    )
+    ) || {
+        echo "ERROR: Unable to download plugin." >&2
+        exit 1
+    }
 }
 
 
@@ -699,6 +702,7 @@ if $DO_INITIALIZE; then
 fi
 
 if [[ ! -z "$GET_PLUGIN" ]]; then
+    load-git-branches
     install-plugin "$GET_PLUGIN"
     exit
 fi
