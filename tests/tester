@@ -19,6 +19,8 @@ create-playground() {
     if ! (
         cd "$DIR"
         git init
+        git config user.email "mr.fusion@example.com"
+        git config user.name "Mr. Fusion"
         echo "Read this documentation" > README.md
         git add README.md
         git commit -m "Initial commit" README.md
