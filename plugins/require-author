@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Adds a policy that all branches must list an author in their section
+# of the branches.ini file.
+#
+# [valid-branch]
+# parent=master
+# author=Daniel
+#
+# [invalid-branch]
+# parent=master
+#
+# Branches can be excluded by adding them to your config file.  For instance,
+# this one line will skip the `master` and `develop` branches.
+#
+# REQUIRE_AUTHOR_SKIP=(master develop)
+
+hook-add load-config require-author
+
+require-author() {
+    local AUTHOR_VAR BRANCH ERROR
+
+    echo "Scanning configuration to ensure all branches have parents"
+    echo "or that they are marked as 'root' in their INI section."
+
+    for BRANCH in "${INI_BRANCHES[@]}"; do
+        AUTHOR_VAR="$(ini-var "$BRANCH" author)"
+        ERROR=false
+
+        # Check for an empty/missing "author" in the INI file
+        if [[ -z "${!AUTHOR_VAR}" ]]; then
+            ERROR=true
+        fi
+
+        if $ERROR && [[ ${#REQUIRE_AUTHOR_SKIP} -gt 0 ]]; then
+            if in-array "$BRANCH" "${REQUIRE_AUTHOR_SKIP[@]}"; then
+                ERROR=false
+            fi
+        fi
+
+        if $ERROR; then
+            echo "Branch requires an author: $BRANCH"
+
+            return 1
+        fi
+    done
+}

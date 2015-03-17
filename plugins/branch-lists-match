@@ -1,0 +1,29 @@
+#!/bin/bash
+
+hook-add merge-before branch-lists-match
+
+branch-lists-match() {
+    local BRANCH
+
+    if [[ ${#INI_BRANCHES[@]} -ne ${#GIT_BRANCHES[@]} ]]; then
+        echo "Branch lists do not match in length"
+
+        return 1
+    fi
+
+    for BRANCH in "${INI_BRANCHES[@]}"; do
+        if ! in-array "$BRANCH" "${GIT_BRANCHES[@]}"; then
+            echo "INI file lists branch not found in git: $BRANCH"
+
+            return 1
+        fi
+    done
+
+    for BRANCH in "${GIT_BRANCHES[@]}"; do
+        if ! in-array "$BRANCH" "${INI_BRANCHES[@]}"; then
+            echo "Git lists branch not found in INI file: $BRANCH"
+
+            return 1
+        fi
+    done
+}

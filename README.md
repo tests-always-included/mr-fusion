@@ -3,7 +3,6 @@ Mr. Fusion
 
 Git branch management and upkeeping made easier.  You can't make it completely automated, but you can remove almost all of the mundane work.
 
-
 This software solves the problem that crops up when there are multiple branches being developed simultaneously in git repositories.  Let's say that you have three developers (Abel, Barney and Corey) working on three feature branches (`a`, `b`, and `c` respectively).  They all start from the project's `master` branch at the same time.
 
 The problem arises from the mentality that "the first one to `master` wins!"
@@ -46,7 +45,7 @@ If you prefer to name your `mr-fusion` branch another name, you can do that with
 
     MR_FUSION_BRANCH=another_branch mr-fusion ....
 
-From here you will see a `config` and `branches.ini`.
+From here you will see a `config` and `branches.ini`.  You can also load plugins from your repository.
 
 
 ### config
@@ -75,12 +74,15 @@ This simple INI file lists the branches in the repository and their parent.  If 
 The cooler thing is that Mr. Fusion knows about dependencies.  For instance, it sees that `master` has no parent and thus no dependencies.  The merge from `master` to `develop` will happen before the merges from `develop` to `feature/juggernaut` and `feature/sparkle`.  After that, `feature/sparkle` will be merged into `feature/razzle-dazzle`.
 
 
-Extending
----------
+### plugins/
 
-Extending?  Yeah, you can do it with more shell scripts.
+This folder contains plugin scripts.  All of them are sourced and loaded into the environment.  They are simple Bash scripts and can use `hook-add` in order to attach themselves to various hooks that Mr. Fusion exposes especially for plugin authors to use.
 
-I have not written up this example yet (the project just started) but I certainly will.  You just need to add more functions and you can validate branches before the merge.  You can require settings in the INI file or mandate that branches are configured or else the entire merge stops.
+The easiest way to install plugins is to use Mr. Fusion.  First, browse the [plugins/](plugins/) folder for a plugin's filename that you would want to install.  Next, use Mr. Fusion.
+
+    mr-fusion -p plugin-name https://github.com/your_name_here/your_repo_here.git
+
+If you intend to write your own plugins and you want to see how they work, there is documentation about [plugins](docs/plugins.md) that you should read.
 
 
 License

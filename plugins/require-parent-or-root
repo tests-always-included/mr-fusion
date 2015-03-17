@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Require that branches are set up with either a parent=... or root=true
+# in the branches.ini file.  The intent is to make sure that there are
+# fewer typos in the branches.ini file by forcing branches to have specific
+# attributes.
+#
+# [valid-parent]
+# parent=another-branch-name
+#
+# [valid-root]
+# root=true
+#
+# [invalid-due-to-typo]
+# paretn=misspelled-parent
+
+hook-add load-config require-parent-or-root
+
+require-parent-or-root() {
+    local BRANCH PARENT_VAR ROOT_VAR
+
+    echo "Scanning configuration to ensure all branches have parents"
+    echo "or that they are marked as 'root' in their INI section."
+
+    for BRANCH in "${INI_BRANCHES[@]}"; do
+        # Build variable names
+        PARENT_VAR="$(ini-var "$BRANCH" parent)"
+        ROOT_VAR="$(ini-var "$BRANCH" root)"
+
+        # Check for an empty/missing "parent" in the INI file
+        if [[ -z "${!PARENT_VAR}" ]]; then
+            # Check for where "root" is not set to "true"
+            if [[ "${!ROOT_VAR}" != "true" ]]; then
+                echo "Branch misconfigured and requires a parent or root flag: $BRANCH"
+
+                return 1
+            fi
+        fi
+    done
+}
