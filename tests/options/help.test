@@ -1,0 +1,13 @@
+#!../tester
+
+no-arguments() {
+    ! run-mr-fusion
+}
+
+testcase no-arguments "Should fail with no arguments"
+
+with-h() {
+    run-mr-fusion -h
+}
+
+testcase with-h "Should not fail with -h"

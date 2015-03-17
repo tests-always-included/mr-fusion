@@ -1,0 +1,80 @@
+#!/bin/bash
+
+cleanup() {
+    if [[ "${#PLAYGROUNDS}" -gt 0 ]]; then
+        rm -rf "${PLAYGROUNDS[@]}"
+    fi
+}
+
+create-playground() {
+    local DIR
+
+    DIR=$(mktemp -d)
+
+    if [[ -z "$DIR" ]] || [[ ! -d "$DIR" ]]; then
+        echo "Unable to create playground for testing" >&2
+        exit 1
+    fi
+
+    if ! (
+        cd "$DIR"
+        git init
+        echo "Read this documentation" > README.md
+        git add README.md
+        git commit -m "Initial commit" README.md
+    ) > /dev/null; then
+        echo "Unable to initialize repository" >&2
+        exit 1
+    fi
+
+    PLAYGROUNDS=("${PLAYGROUNDS[@]}" "$DIR")
+    echo "$DIR"
+}
+
+playground-testcase() {
+    local PLAYGROUND
+
+    PLAYGROUND=$(create-playground)
+    (
+        cd "$PLAYGROUND"
+        testcase "$@"
+    )
+}
+
+run-mr-fusion() {
+    local ARGS
+
+    ARGS=("$@")
+
+    if [[ ! -z "$PLAYGROUND" ]]; then
+        ARGS=("${ARGS[@]}" "$PLAYGROUND")
+    fi
+
+    "$PROJECT_ROOT/mr-fusion" "${ARGS[@]}" > /dev/null 2>&1
+}
+
+testcase() {
+    echo -n "$2 ... "
+
+    if $1 > /dev/null; then
+        echo "pass"
+    else
+        echo "FAIL"
+        FAILURES=true
+    fi
+}
+
+
+FAILURES=false
+PLAYGROUNDS=()
+PROJECT_ROOT=$(cd "${0%/*}/.." ; pwd)
+
+# Execute the test file
+. "$1"
+
+if $FAILURES; then
+    echo "Failures detected"
+    exit 1
+fi
+
+echo "Test suite passed"

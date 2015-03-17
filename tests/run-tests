@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+cd "${0%/*}"
+PASS=0
+FAIL=0
+IFS=$'\n'
+FINAL_RESULT=0
+
+find . -type f -name \*.test | while read TEST; do
+    if (
+        echo "Test suite:  $TEST"
+
+        ./tester $TEST
+    ); then
+        PASS=$(($PASS + 1))
+    else
+        FAIL=$(($FAIL + 1))
+        FINAL_RESULT=1
+    fi
+done
+
+exit $FINAL_RESULT

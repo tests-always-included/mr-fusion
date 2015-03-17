@@ -1,0 +1,15 @@
+#!../tester
+
+install-works() {
+    run-mr-fusion -i
+    git branch | grep mr-fusion
+}
+
+playground-testcase install-works "Can install into a repository"
+
+install-fails-when-already-exists() {
+    git checkout -b mr-fusion 2>&1
+    ! run-mr-fusion -i
+}
+
+playground-testcase install-fails-when-already-exists "Should error when the configuration branch already exists"
