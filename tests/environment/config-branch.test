@@ -1,0 +1,13 @@
+#!../tester
+
+rename-branch() {
+    MR_FUSION_BRANCH="koala" run-mr-fusion -i
+    git branch | grep koala
+
+    if git branch | grep mr-fusion; then
+        echo "Should not find normal mr-fusion branch" >&2
+        return 1
+    fi
+}
+
+playground-testcase rename-branch "Can rename configuration branch with a simple environment variable"
