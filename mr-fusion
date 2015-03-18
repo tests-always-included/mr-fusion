@@ -169,7 +169,7 @@ hook-add() {
 
     VAR="HOOK_$(encode-string "$1")"
     shift
-    printf -v COMMAND "%q " "$@"
+    printf -v COMMAND " %q" "$@"
     eval "${VAR}=(\"\${${VAR}[@]}\" \"\${COMMAND:1}\")"
 }
 
@@ -299,7 +299,7 @@ initialize-repository() {
             if [[ "$BRANCH" != "$MR_FUSION_BRANCH" ]]; then
                 echo "[$BRANCH]" >> branches.ini
                 echo "parent=" >> branches.ini
-                echo "" >> branches.ini
+                echo >> branches.ini
             fi
         done
 
