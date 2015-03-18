@@ -1,0 +1,43 @@
+#!../tester
+
+setup-basic() {
+    run-mr-fusion -i
+    install-plugin branch-lists-match
+    git checkout mr-fusion 2>&1
+    cat > branches.ini <<EOF
+[master]
+[develop]
+[feature1]
+[mr-fusion]
+EOF
+    git commit -m 'Update branches' branches.ini
+
+    git checkout master 2>&1
+    git checkout -b develop 2>&1
+    git checkout -b feature1 2>&1
+}
+
+lists-match() {
+    setup-basic
+    run-mr-fusion
+}
+
+playground-testcase lists-match "Returns success when branch lists match"
+
+extra-git-branch() {
+    setup-basic
+    git checkout -b feature2 2>&1
+    ! run-mr-fusion
+}
+
+playground-testcase extra-git-branch "Errors with extra git branch"
+
+extra-ini-branch() {
+    setup-basic
+    git checkout mr-fusion 2>&1
+    echo '[feature2]' >> branches.ini
+    git commit -m 'Adding extra branch' branches.ini
+    ! run-mr-fusion
+}
+
+playground-testcase extra-ini-branch "Errors with extra branch in INI file"

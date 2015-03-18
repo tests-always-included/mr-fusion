@@ -46,6 +46,13 @@ in-array() {
     return 1
 }
 
+install-plugin() {
+    git checkout mr-fusion 2>&1
+    cp "$PROJECT_ROOT/plugins/$1" plugins/
+    git add "plugins/$1" 2>&1
+    git commit -m "Adding plugin $1" 2>&1
+}
+
 playground-testcase() {
     local PLAYGROUND
 
