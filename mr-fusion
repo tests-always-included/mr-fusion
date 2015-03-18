@@ -367,10 +367,12 @@ install-plugin() {
 load-config() {
     local OLD_PWD PLUGIN
 
-    switch-to-branch "$MR_FUSION_BRANCH"
     OLD_PWD=$(pwd)
 
     cd "$WORK_DIR"
+
+    # Avoid switch-to-branch so we can handle errors ourselves
+    git checkout "$MR_FUSION_BRANCH" || return 0
 
     if [[ -f config ]]; then
         echo "Loading config file from repository"
@@ -524,7 +526,7 @@ parse-ini() {
 
     OLD_IFS=$IFS
     IFS="\n"
-    SECTION=""
+    SECTION=
     PREFIX="$1"
 
     eval "${PREFIX}=()"
@@ -614,7 +616,7 @@ trim() {
     local OLD STR
 
     STR=$1
-    OLD=""
+    OLD=
 
     while [[ "$STR" != "$OLD" ]]; do
         OLD=$STR
@@ -694,6 +696,7 @@ fi
 
 trap cleanup SIGINT SIGTERM EXIT
 clone-repository "$1"
+load-config
 configure-git
 
 if $DO_INITIALIZE; then
@@ -708,7 +711,6 @@ if [[ ! -z "$GET_PLUGIN" ]]; then
     exit
 fi
 
-load-config
 configure-git
 load-git-branches
 build-merge-list
