@@ -1,0 +1,37 @@
+#!../tester
+
+setup-basic() {
+    run-mr-fusion -i
+    install-plugin require-author
+    git checkout mr-fusion 2>&1
+}
+
+has-author() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+author=someone
+EOF
+    git commit -m 'Update branches' branches.ini
+    run-mr-fusion
+}
+
+playground-testcase has-author "Passes when a branch has an author"
+
+missing-author() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+author=one
+[develop]
+[feature1]
+author=two
+EOF
+    git commit -m 'Update branches' branches.ini
+    git checkout master 2>&1
+    git checkout -b develop 2>&1
+    git checkout -b feature1 2>&1
+    ! run-mr-fusion
+}
+
+playground-testcase missing-author "Fails when a branch is missing an author"

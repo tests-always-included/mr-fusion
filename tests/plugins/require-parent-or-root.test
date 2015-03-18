@@ -1,0 +1,68 @@
+#!../tester
+
+setup-basic() {
+    run-mr-fusion -i
+    install-plugin require-parent-or-root
+    git checkout mr-fusion 2>&1
+}
+
+working-config() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+root=true
+[develop]
+parent=master
+EOF
+    git commit -m 'Update branches' branches.ini
+    run-mr-fusion
+}
+
+playground-testcase working-config "Passes with a working config"
+
+wrong-root() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+root=blah
+EOF
+    git commit -m 'Update branches' branches.ini
+    ! run-mr-fusion
+}
+
+playground-testcase wrong-root "Fails when root is not 'true'"
+
+empty-root() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+root=
+EOF
+    git commit -m 'Update branches' branches.ini
+    ! run-mr-fusion
+}
+
+playground-testcase empty-root "Fails when root is empty"
+
+empty-parent() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+parent=
+EOF
+    git commit -m 'Update branches' branches.ini
+    ! run-mr-fusion
+}
+
+playground-testcase empty-parent "Fails when parent is empty"
+
+neither-setting() {
+    setup-basic
+    cat >> branches.ini <<EOF
+[master]
+EOF
+    git commit -m 'Update branches' branches.ini
+    ! run-mr-fusion
+}
+
+playground-testcase neither-setting "Fails when neither setting is present"
