@@ -113,7 +113,6 @@ Plugins are able to run their own functions at key points in the execution or Mr
 
 Unless noted, hooks that return an error status code will cancel the merge process entirely.
 
-* `clone-repository`: Immediately after the repository is cloned and before anything happens to the repository.
 * `git-config`: Additional configuration that should be applied to the git repository before switching branches and performing merges.
 * `load-config`: After configuration files are loaded into environment variables.  This can be used to validate that various settings are in place or that the INI file has the necessary keys for specific branches.  Do not assume that the git branches have been loaded.
 * `git-branches`: After branches are loaded.  This can be used to make sure that necessary branches exist.  Do not assume that the configuration has been loaded.
