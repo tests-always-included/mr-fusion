@@ -94,4 +94,4 @@ This software is licensed under a MIT license with an additional non-advertising
 
 
 [Travis CI]: http://travis-ci.org/tests-always-included/mr-fusion
-[Travis-Image]: https://secure.travis-ci.rg/tests-always-included/mr-fusion.png
+[Travis-Image]: https://api.travis-ci.org/tests-always-included/mr-fusion.png
