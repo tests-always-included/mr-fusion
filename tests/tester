@@ -1,11 +1,24 @@
 #!/bin/bash
 
+
+# Remove the playgrounds if any exist
+#
+# Automatically executed via a trap
 cleanup() {
     if [[ "${#PLAYGROUNDS}" -gt 0 ]]; then
         rm -rf "${PLAYGROUNDS[@]}"
     fi
 }
 
+
+# Creates a playground for running tests.
+#
+# I would have called this a sandbox, but the tests are not "boxed in" at all.
+#
+# Writes the playground path to stdout.  Adds the playground to the list of
+# playgrounds for the cleanup function.
+#
+# On errors, this TERMINATES THE TESTS.
 create-playground() {
     local DIR
 
@@ -33,6 +46,13 @@ create-playground() {
     echo "$DIR"
 }
 
+
+# Test if a value is in an array.  Lifted directly from Mr. Fusion.
+#
+# Parameters:
+#     $1: Needle (the value to find)
+#     $2-$*: Haystack (the values to search)
+# Returns true (0) if the value was found, false (1) otherwise.
 in-array() {
     local CHECK NEEDLE
 
@@ -46,6 +66,12 @@ in-array() {
     return 1
 }
 
+
+# Installs a plugin into the playground's configuration.  Pulls the plugin
+# From the local repository, not the online one.
+#
+# Parameters:
+#     $1: Plugin filename
 install-plugin() {
     git checkout mr-fusion 2>&1
     cp "$PROJECT_ROOT/plugins/$1" plugins/
@@ -53,6 +79,13 @@ install-plugin() {
     git commit -m "Adding plugin $1" 2>&1
 }
 
+
+# Run a test case in a new playground
+#
+# On test case failure this sets FAILURES to true
+#
+# Parameters:
+#     $1: Test case to run
 playground-testcase() {
     local PLAYGROUND
 
@@ -63,6 +96,14 @@ playground-testcase() {
     ) || FAILURES=true
 }
 
+
+# Run Mr. Fusion from the local repository.
+#
+# If there is a playground that's open, this runs against that repository.
+#
+# Parameters:
+#    $*:  All parameters are passed to mr-fusion
+# Returns the same status code as mr-fusion.
 run-mr-fusion() {
     local ARGS
 
@@ -75,6 +116,13 @@ run-mr-fusion() {
     "$PROJECT_ROOT/mr-fusion" "${ARGS[@]}" 2>&1
 }
 
+
+# Runs a test case function
+#
+# Parameters:
+#     $1: Name of function to run
+#     $2: Description of test
+# Returns true (0) on success, false (1) on error.
 testcase() {
     echo -n "$2 ... "
 

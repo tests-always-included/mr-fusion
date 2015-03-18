@@ -1,11 +1,19 @@
 #!/bin/bash
 set -e
 
+
+# Run an entire test suite
+#
+# Parameters:
+#     $1: Test suite / filename
+# Returns the same return code as the test suite
 run-suite() {
-    echo "Test suite:  $TEST"
+    local CODE
+
+    echo "Test suite:  $1"
     echo ""
 
-    ./tester $TEST
+    ./tester "$1"
     CODE=$?
 
     echo ""
