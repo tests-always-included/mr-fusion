@@ -9,9 +9,11 @@ This software solves the problem that crops up when there are multiple branches 
 
 The problem arises from the mentality that "the first one to `master` wins!"
 
-All three programmers are awesome at their jobs and try hard to create atomic commits.  Abel finishes first and his work is approved with QA.  He merges his code to `master`.  Barney finishes his work and neglects to merge in `master`.  His code is tested and when he tries to merge then there are many conflicts.  Barney is sad and stays an extra hour at work to untangle the merge so he can go home for the weekend.
+All three programmers are awesome at their jobs and try hard to create atomic commits.  Abel finishes first and his work is approved with QA.  He merges his code to `master`.  Barney finishes his work and neglects to merge in `master`.  His code is tested and when he tries to merge then there are many conflicts as indicated by the orange dot.  Barney is sad and stays an extra hour at work to untangle the merge so he can go home for the weekend.
 
-Poor Corey.  He's been working on the biggest, most invasive feature out of the three developers.  Because of this, he's the last one to get his code to `master`.  Now when Corey attempts to merge with `master`, he has to resolve the problems that arise from both Abel's and Barney's changes!  Corey loses half of a day or more when trying to resolve the merge conflict.
+![Without Mr. Fusion](docs/without-fusion.png)
+
+Poor Corey.  He's been working on the biggest, most invasive feature out of the three developers.  Because of this, he's the last one to get his code to `master`.  Corey attempts to merge with `master` and is represented by the red dot.  He now has to resolve the problems that arise from both Abel's and Barney's changes!  Corey loses half of a day or more when trying to resolve the merge conflict.
 
 
 Mitigating the Problem
@@ -19,7 +21,9 @@ Mitigating the Problem
 
 Mr. Fusion can run as a cron job and automatically perform clean merges on your behalf.  This means when Abel finishes his job then Abel's code is merged into `master` and all branches that use `master` as their parent.  Barney and Corey automatically will have Abel's code and can resolve conflicts.  This means they will be resolving potentially more conflicts, but the crucial bit is that the conflicts will be smaller.  Smaller conflicts are significantly easier to manage.
 
-When Barney merges to `master` and Corey gets Barney's changes (or is notified that the merge failed) then it has a much smaller impact on Corey.  He's dealing with a smaller change set than in the first scenario where Cory needed to handle the changes from multiple developers.
+![With Mr. Fusion](docs/with-fusion.png)
+
+In this scenario, Mr. Fusion's commits are green dots.  They only happen when there is a clean merge.  When Barney merges to `master` and Corey gets Barney's changes (or is notified that the merge failed) then it has a much smaller impact on Corey.  He's dealing with a smaller change set than in the first scenario where Cory needed to handle the changes from multiple developers.
 
 
 Usage

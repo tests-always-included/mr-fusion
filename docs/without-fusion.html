@@ -1,0 +1,56 @@
+<html>
+    <head>
+        <script src="https://rawgithub.com/nicoespeon/gitgraph.js/develop/src/gitgraph.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://rawgithub.com/nicoespeon/gitgraph.js/develop/src/gitgraph.css" />
+    </head>
+    <body>
+        <canvas id="gitGraph"></canvas>
+        <script type="text/javascript">
+            var gitgraph, master, a, b, c;
+
+            gitgraph = new GitGraph({
+                template: {
+                    colors: [
+                        "#979797",
+                        "blue",
+                        "pink",
+                        "purple"
+                    ],
+                    branch: {
+                        lineWidth: 10,
+                        spacingX: 40
+                    },
+                    commit: {
+                        spacingY: -60,
+                        dot: {
+                            size: 14
+                        },
+                        message: {
+                            font: "normal 14pt Arial"
+                        }
+                    }
+                },
+                orientation: "horizontal",
+                mode: "compact"
+            });
+            master = gitgraph.branch("master");
+            a = master.branch();
+            b = master.branch();
+            c = master.branch();
+            master.commit();
+            a.commit();
+            b.commit();
+            c.commit();
+            a.merge(master);
+            b.commit();
+            c.commit();
+            b.merge(master, {
+                color: "orange"
+            })
+            c.commit();
+            c.merge(master, {
+                color: "red"
+            });
+        </script>
+    </body>
+</html>
